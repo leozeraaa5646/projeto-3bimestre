@@ -45,6 +45,54 @@ app.get("/usuarios", async (_req, res) => {
   }
 });
 
+
+//UPDATE: PUT /usuarios/:id
+app.put("/usuarios/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, password } = req.body;
+    
+    const usuario = await prisma.user.update({
+      where: { id: Number(id) },
+      data: { 
+        name, 
+        email, 
+        password 
+      }
+    });
+    
+    res.json(usuario);
+  } catch (error) {
+    if (error.code === "P2025") {
+      return res.status(404).json({ error: "Usuário não encontrado" });
+    }
+    if (error.code === "P2002") {
+      return res.status(409).json({ error: "E-mail já cadastrado" });
+    }
+    
+    res.status(500).json({ error: "Erro ao atualizar usuário" });
+  }
+});
+
+//DELETE: DELETE /usuarios/:id
+app.delete("/usuarios/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    await prisma.user.delete({
+      where: { id: Number(id) }
+    });
+    
+    res.status(204).send();
+  } catch (error) {
+    if (error.code === "P2025") {
+      return res.status(404).json({ error: "Usuário não encontrado" });
+    }
+    
+    res.status(500).json({ error: "Erro ao deletar usuário" });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
@@ -53,4 +101,123 @@ app.listen(PORT, () => {
 //ROTA DE TESTE
 app.get("/status", (req, res) => {
   res.json({ message: "API Online" });
+});
+
+// Stores Routes
+// POST /stores - Create a store
+app.post('/stores', async (req, res) => {
+  try {
+    const { name, userId } = req.body;
+    const store = await prisma.store.create({
+      data: { name, userId: Number(userId) }
+    });
+    res.status(201).json(store);
+  } catch (e) { 
+    res.status(400).json({ error: e.message }); 
+  }
+});
+
+// GET /stores/:id - Get store with owner and products
+app.get('/stores/:id', async (req, res) => {
+  try {
+    const store = await prisma.store.findUnique({
+      where: { id: Number(req.params.id) },
+      include: { user: true, products: true }
+    });
+    if (!store) return res.status(404).json({ error: 'Loja não encontrada' });
+    res.json(store);
+  } catch (e) { 
+    res.status(400).json({ error: e.message }); 
+  }
+});
+
+// PUT /stores/:id - Update a store
+app.put('/stores/:id', async (req, res) => {
+  try {
+    const { name } = req.body;
+    const store = await prisma.store.update({
+      where: { id: Number(req.params.id) },
+      data: { name }
+    });
+    res.json(store);
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// DELETE /stores/:id - Delete a store
+app.delete('/stores/:id', async (req, res) => {
+  try {
+    await prisma.store.delete({
+      where: { id: Number(req.params.id) }
+    });
+    res.status(204).send();
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// Products Routes
+// POST /products - Create a product
+app.post('/products', async (req, res) => {
+  try {
+    const { name, price, storeId } = req.body;
+    const product = await prisma.product.create({
+      data: { 
+        name, 
+        price: Number(price), 
+        storeId: Number(storeId) 
+      }
+    });
+    res.status(201).json(product);
+  } catch (e) { 
+    res.status(400).json({ error: e.message }); 
+  }
+});
+
+// GET /products - Get all products with store and owner
+app.get('/products', async (req, res) => {
+  try {
+    const products = await prisma.product.findMany({
+      include: { 
+        store: { 
+          include: { 
+            user: true 
+          } 
+        } 
+      }
+    });
+    res.json(products);
+  } catch (e) { 
+    res.status(400).json({ error: e.message }); 
+  }
+});
+
+// PUT /products/:id - Update a product
+app.put('/products/:id', async (req, res) => {
+  try {
+    const { name, price } = req.body;
+    const product = await prisma.product.update({
+      where: { id: Number(req.params.id) },
+      data: { 
+        name,
+        price: price ? Number(price) : undefined
+      }
+    });
+    res.json(product);
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// DELETE /products/:id - Delete a product
+app.delete('/products/:id', async (req, res) => {
+  try {
+    await prisma.product.delete({
+      where: { id: Number(req.params.id) }
+    });
+    res.status(204).send();
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
 });
