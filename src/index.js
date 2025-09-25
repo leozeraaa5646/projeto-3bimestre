@@ -183,6 +183,7 @@ app.get('/products', async (req, res) => {
         store: { 
           include: { 
             user: true 
+            
           } 
         } 
       }
