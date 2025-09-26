@@ -117,6 +117,22 @@ app.post('/stores', async (req, res) => {
   }
 });
 
+// GET /stores - Get all stores with their owners and products
+app.get('/stores', async (req, res) => {
+  try {
+    const stores = await prisma.store.findMany({
+      include: { 
+        user: true, 
+        products: true 
+      },
+      orderBy: { id: 'asc' }
+    });
+    res.json(stores);
+  } catch (e) { 
+    res.status(400).json({ error: e.message }); 
+  }
+});
+
 // GET /stores/:id - Get store with owner and products
 app.get('/stores/:id', async (req, res) => {
   try {
